@@ -33,8 +33,11 @@ O(26,2,1) = 0; % if you're in state 26 and you tap (#2), you will never observe 
 figure; hold on;
 subplot 121
 imagesc(O(:,:,1)); % for "null"
+title('x = null')
 subplot 122
 imagesc(O(:,:,2)); % for "tone"
+title('x = tone')
+suptitle('observation matrices')
 
 %% fill out the transition matrix T
 %T(i,j,k) is the probability of transitioning from sub-state i-->j after
@@ -77,7 +80,13 @@ T(3,14,2)=1;
 T(4,14,2)=1;
 T(5,14,2)=1;
 T(6,14,2)=1;
+
+T(4,26,2)=1;
+T(5,26,2)=1;
+T(6,26,2)=1;
 T(7,26,2)=1;
+T(8,26,2)=1;
+
 T(8,14,2)=1;
 T(9,14,2)=1;
 T(10,14,2)=1;
@@ -99,11 +108,14 @@ T(24,14,2)=1;
 T(25,14,2)=1;
 T(27,1,2)=1;
 
-figure; hold on;
+figure; hold on
 subplot 121
-imagesc(T(:,:,1)); % for "null"
+imagesc(T(:,:,1)); % for "nothing"
+title('A = nothing')
 subplot 122
-imagesc(T(:,:,2)); % for "tone"
+imagesc(T(:,:,2)); % for "tap"
+title('A = tap')
+suptitle('transition matrices')
 
 
 
