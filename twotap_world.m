@@ -13,7 +13,7 @@ S0 = 1; % first state
 
 % can run the exp on two timescales: one at the level of second matter, one
 % where at the level of trials
-nSt= 27;%number of states
+nSt= 26;%number of states
 nAc = 2; %number of actions
 nOb= 2;%number of observations
 
@@ -23,12 +23,16 @@ nOb= 2;%number of observations
 %O - [S' x O x A] observation distribution: O(i,j,m) = P(x'=m|s'=i,a=j)
 %   probability of observing x in state s' after taking action a
 
-O=zeros(nSt,nAc,nOb); % 27 states, 3 actions, 2 observations
+O=zeros(nSt,nAc,nOb); % 26 states, 3 actions, 2 observations
 
 
-O(26,2,2) = 1; % only state-action pair where you observe tone is tap (#2) --> rew state (#26)
-O(:,:,1) = 1; % in states 1-25, 27, you will observe nothing if you wait (#1)
-O(26,2,1) = 0; % if you're in state 26 and you tap (#2), you will never observe nothing.
+O(26,2,2) = 1; % only state-action pair where you observe tone is tap (#2) )
+%O(26,2,2) = 1; % only state-action pair where you observe tone is tap (#2) 
+
+O(:,1,1) = 1; % in states 1-25,27, you will observe nothing if you wait (#1)
+O(:,2,1) = 1; % in state 26, if you tap (#2) you will observe nothing
+O(26,2,1) = 0;
+%O(26,2,2) = 0;
 
 figure; hold on;
 subplot 121
@@ -57,7 +61,7 @@ T(9,10,1)=1;
 T(10,11,1)=1;
 T(11,12,1)=1;
 T(12,13,1)=1;
-T(13,13,1)=1;
+T(13,26,1)=1;
 
 T(14,15,1)=1;
 T(15,16,1)=1;
@@ -69,25 +73,25 @@ T(20,21,1)=1;
 T(21,22,1)=1;
 T(22,23,1)=1;
 T(23,24,1)=1;
-T(26,27,1)=1;
-T(25,27,1)=1;
-T(27,27,1)=1;
+T(24,25,1)=1;
+T(25,26,1)=1;
+%T(26,27,1)=1; %if you wait you go to 27
+T(26,26,1)=1;
 
 % page 2: tap
 T(1,14,2)=1;
 T(2,14,2)=1;
 T(3,14,2)=1;
 T(4,14,2)=1;
-T(5,14,2)=1;
-T(6,14,2)=1;
+T(5,14,2)=0.5;
+T(6,14,2)=0.5;
 
-T(4,26,2)=1;
-T(5,26,2)=1;
-T(6,26,2)=1;
+T(5,26,2)=0.5;
+T(6,26,2)=0.5;
 T(7,26,2)=1;
 T(8,26,2)=1;
 
-T(8,14,2)=1;
+%T(8,14,2)=1;
 T(9,14,2)=1;
 T(10,14,2)=1;
 T(11,14,2)=1;
@@ -106,21 +110,45 @@ T(22,14,2)=1;
 T(23,14,2)=1;
 T(24,14,2)=1;
 T(25,14,2)=1;
-T(27,1,2)=1;
+%T(26,27,2)=1; %if you tap you go to 27 (redundant)
+T(26,1,2)=1;
 
-figure; hold on
-subplot 121
-imagesc(T(:,:,1)); % for "nothing"
-title('A = nothing')
-subplot 122
+%figure; hold on
+%subplot 121
+%imagesc(T(:,:,1)); % for "nothing"
+%title('A = nothing')
+%subplot 122
 imagesc(T(:,:,2)); % for "tap"
 title('A = tap')
 suptitle('transition matrices')
 
 
 
-S0 = 27;
+S0 = size(T,1);
 
-results= twotap_agent(S0,O,T);
+results= twotap_agent(S0,O,T,0);
+
+%% "lesioned" animal
+
+results= twotap_agent(S0,O,T,1);
+% the lesioned animal only knows the IPI and not the ITI
+% wait, so the transition matrix should stay the same, but
+
+T_lesion = T([1:13 26],[1:13 26],:);
+T_lesion(13,14,1) = 1;
+T_lesion(1,1,2) = 1;
+T_lesion(2,1,2) = 1;
+T_lesion(3,1,2) = 1;
+T_lesion(4,1,2) = 1;
+T_lesion(5,1,2) = 0.5;
+T_lesion(6,1,2) = 0.5;
+T_lesion(7,14,2) = 1;
+T_lesion(7,14,2) = 1;
+
+O_lesion = O([1:13 26],:,:);
+O(14,2,2) = 1; %only way they see reward is when they have just tapped
+results= twotap_agent(S0,O_lesion,T_lesion,1);
+
+
 
 end
