@@ -1,4 +1,4 @@
-function results = twotap_agent(S0,O,T)
+function results = twotap_agent(S0,O,T,lesioned)
 % PURPOSE: simulate the agent navigating the 2-tap task, actor-critic learning for POMDPs
 % AUTHOR: lucy lai
 %
@@ -12,6 +12,7 @@ function results = twotap_agent(S0,O,T)
 %   T - [S x S' x A] transition distribution: T(i,j,k) = P(s'=j|s=i, a=k)
 %   probability of transitioning to state s' from state s after taking
 %   action a
+%   lesioned = does the animal have MC or not
 %
 % OUTPUTS:
 %   results - structure with the following fields:
@@ -22,33 +23,84 @@ function results = twotap_agent(S0,O,T)
 
 nTrials = 5000;
 
+%% lesioned?
+if lesioned ==1
+    T_lesion = T([1:13 26],[1:13 26],:);
+    T_lesion(13,14,1) = 1;
+    T_lesion(:,1,2) = 1;  % if you tap too early, state goes back to 1
+    T_lesion(5,1,2) = 0.5; % except in these states
+    T_lesion(6,1,2) = 0.5;
+    T_lesion(7,1,2) = 0;
+    T_lesion(8,1,2) = 0;
+    T_lesion(7,14,2) = 1;
+    T_lesion(8,14,2) = 1;
+    T_lesion(14,14,2) = 0;
+    
+    O_lesion = O([1:13 26],:,:);
+    
+    O_lesion(14,2,1) = 0;
+    O_lesion(14,2,2) = 1; %only way they see reward is when they have just tapped
+    
+    b(14:25) = 0;
+end
+
+
+blur = 0.05;
+for i = 1:26
+    G_blur(i,:) = normpdf(1:26,i,blur*i);
+end
+G_blur = [zeros(26,1) G_blur(:,1:25)];
+
+S0 = size(T,1);
+
+newT = T(:,:,1)+G_blur;
+newT=newT./sum(newT,2);
+T(:,:,1) = newT;
+newT = T(:,:,2)+G_blur;
+
 %% initialize states and weights
 % initialization
 S = size(T,1);      % number of states
 b = ones(S,1)/S;    % belief state
-%b(26) = 1;
+if lesioned ==1
+    b(14:25) = 0; %no belief in these states
+end
+% 
+% blur = 0.1; %proportionality constant for Gaussian blur
+% 
+% for i = 1:S-1
+%     G_blur(i,:) = normpdf(1:26,i,blur*i);
+% end
+% G_blur(26,:) = max(G_blur(:)).*ones(1,S);
+
+% 
+% G_blur = G_blur./max(G_blur(:));
+%b = b+G_blur(S0,:); %currently blurring belief by absolute time, may not be super plausible, maybe the reset happens when they tap
 b = b/sum(b);
+
 theta_policy  = zeros(S,2);     % policy weights
-%theta_policy(:,1) = 0.2;     % policy weights
-theta_policy(end,2) = 0.1; % always tap at the beginning
-%theta_policy(26,1) = 1; % always wait after getting reward
-%theta_policy([7,26],2) = 0.2;
+%theta_policy(:,1) = 0.02;     % policy weights
+%theta_policy(end,2) = 0; % always tap at the beginning
+%theta_policy([7,26],2) = 0.5;
 %theta_policy(14,1) = 1;
 %theta_policy([1:6,8:13,14:25],1) = 0.7;
 w_value  = zeros(S,1);          % value weights
-C = 0.1;%cost to tap
+C = 0.05;%cost to tap
 
 %% initialize learning parameters
-alpha_policy = 0.2;         % policy learning rate
-alpha_value = 0.2;          % value learning rate
+alpha_policy = 0.1;         % policy learning rate
+alpha_value = 0.1;          % value learning rate
 gamma = 0.98;
-TE = 1; %temperature parameter in the policy (higher is more noisy)
+TE = 0.05; %temperature parameter in the policy (higher is more noisy)
 last_S = S;
+
+
+
 
 for t = 1:nTrials
     
     %% take an action according to policy
-   
+    
     % if t ==1
     p_a = (exp((theta_policy'*b)./TE));%./(exp((theta_policy'*b)./T));
     %else
@@ -56,9 +108,9 @@ for t = 1:nTrials
     % end
     
     % if t==1
-     %   p_a = [0 1]; %first thing agent will do is tap
+    %   p_a = [0 1]; %first thing agent will do is tap
     %else
-  
+    
     %end
     p_a=  p_a';
     
@@ -71,7 +123,7 @@ for t = 1:nTrials
     %    p_a = [0.5 0.5];
     %   a(t)=1;
     % else
-   
+    
     p_a = p_a./sum(p_a);
     
     [~,a(t)] = max(p_a);
@@ -91,21 +143,60 @@ for t = 1:nTrials
     
     %% observe reward and new state
     [x(t), curr_S] = twotap_env(last_S,a(t), O, T);
-   
+    
+    %if lesioned ==1
+    %    if curr_S>13 && curr_S<26
+    %        b0(curr_S) = 0;
+    %        b0(curr_S-13) =1;
+    %        b(curr_S) = 0;
+    %        b(curr_S-13) =1;
+    %    end
+    %end
     
     %% belief state calculation
-    b0 = b; % old posterior, used later
-    b = ((T(:,:,a(t))'*b0).*squeeze(O(:,a(t),x(t))));
+    
+    if lesioned ==1
+        b0= b; % old posterior, used later
+        b = b([1:13,26]);
+        b0_lesion= b; % old posterior, used later
+        b = ((T_lesion(:,:,a(t))'*b0_lesion).*squeeze(O_lesion(:,a(t),x(t))));
+        b = [b(1:13); zeros(12,1); b(14)];
+        %[~,idx]=max(b');
+        %b = b+G_blur(idx,:)'; %currently blurring belief by absolute time, may not be super plausible, maybe the reset happens when they tap
+        %b = [b(1:13); zeros(12,1); b(14)];
+        
+    else
+        
+        b0 = b; % old posterior, used later
+      %   [~,idx]=max(b0');
+      %  b0 = b0+G_blur(idx,:)';
+       % b0 = b0./sum(b0);
+        b = ((T(:,:,a(t))'*b0).*squeeze(O(:,a(t),x(t))));
+        
+      %  [~,idx]=max(b');
+        
+       % She blurred the ISI distribution (see the first page of the online methods) and then used this blurred distribution to construct the transition matrix 
+      %  if t>1000
+      % b = b+G_blur(idx,:)';
+      %  end
+        
+        %b = conv(b,G_blur(idx,:)'); %currently blurring belief by absolute time, may not be super plausible, maybe the reset happens when they tap
+        
+    end
+    
+    
+    
     %b=zeros(S,1);
     %b(curr_S) = 1;
     % b = b0'*(T(:,:,a(t)).*squeeze(O(:,a(t),x(t))));
     % b = b';
-    if b(14)==1
-        b(14) = 0;
-        b(1) =1;
-    end
+    
     b = b./sum(b); %normalize
-   % b(14:25) = 0;
+    
+    if any(isnan(b))
+        keyboard
+    end
+    
     
     %% TD update
     w0 = w_value;
@@ -114,7 +205,7 @@ for t = 1:nTrials
     w_value = w_value + alpha_value*rpe.*b0;       % weight update
     
     % average reward replacing critic, (not state dependent)
-    % critic not updating certain states 
+    % critic not updating certain states
     
     
     
@@ -125,12 +216,10 @@ for t = 1:nTrials
     theta_policy(:,a(t)) = theta_policy(:,a(t)) + alpha_policy*gamma*rpe.*b0;   % policy weight update
     
     
-     if any(isnan(theta_policy))
+    if any(isnan(theta_policy))
         keyboard
-     end
-     if any(isnan(b))
-        keyboard
-     end
+    end
+    
     
     % gamma = gamma*gamma;
     %% store results
@@ -147,10 +236,11 @@ for t = 1:nTrials
     
     last_S = curr_S; %last state is now current state;
     
-    if C <0.35
-        C = C+0.05;
-    else
-        C = 0;
+    if a(t)==2
+        C = C+0.03;
+    elseif a(t)==1 && C>=0.03
+        C = C-0.03;
+        %theta_policy(26,2) = theta_policy(26,1)+.2;
     end
     
     
@@ -161,21 +251,52 @@ end
 
 figure; hold on;
 
-% states over time 
-subplot 411
+% states over time
+subplot 511
 plot(results.state,'ro-');
+title('state')
+ylabel('state #')
+%xlabel('timesteps (a.u. ~100ms each)')
 
-subplot 412
+% actions over time
+subplot 512
+plot(results.action,'go-');
+title('action chosen')
+ylabel(' action (1=wait, 2=tap)')
+%xlabel('timesteps (a.u. ~100ms each)')
+
+subplot 513
 imagesc(results.w');
+title('state value weights')
+ylabel('state #')
+set(gca,'YDir','normal')
+%xlabel('timesteps (a.u. ~100ms each)')
 
-subplot 413
+subplot 514
 imagesc(results.b');
+title('inferred belief state')
+ylabel('state #')
+set(gca,'YDir','normal')
+%xlabel('timesteps (a.u. ~100ms each)')
 
-subplot 414
-imagesc(results.p_action');
+subplot 515
+imagesc(squeeze(results.theta(:,2,:)));
+ylabel('state #')
+xlabel('timesteps (a.u. ~100ms each)')
+set(gca,'YDir','normal')
+title('policy weights')
 
-%figure
-%plot(results.cost,'bo-');
+suptitle(strcat('total correct trials: ',num2str(sum(x>1))));
+
+
+
+figure
+ for t = 1:length(x)
+    imagesc(results.b(t,:));
+    pause(.04);
+end
+  
+
 % value weights learned over time
 for t = 1:length(x)
     results.w(t,:)
