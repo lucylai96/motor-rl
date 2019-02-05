@@ -1,4 +1,4 @@
-function [results_intact,results_lesioned]=twotap_world(plot)
+function [results_intact,results_lesioned]=twotap_world(plt)
 % purpose: simulate the world in the 2-tap task
 % macro-states = {1:start, 2:IPI, 3:ITI, 4:reward}
 % micro-states = {1-13 is IPI, 14-25 is ITI, 26 is rew, 27 is start}
@@ -122,12 +122,14 @@ T(26,1,2)=1;
 
 
 
-results_intact= twotap_agent(O,T,0,plot);
+%% "intact" animal
+
+results_intact= twotap_agent(O,T,0,plt);
 
 
 %% "lesioned" animal
 
-results_lesioned = twotap_agent(O,T,1,plot);
+results_lesioned = twotap_agent(O,T,1,plt);
 % the lesioned animal only knows the IPI and not the ITI
 % wait, so the transition matrix should stay the same, but
 

@@ -21,7 +21,7 @@ function results = twotap_agent(O,T,lesioned,plott)
 %        .rpe - TD error (after updating)
 %
 
-nTrials = 3000;
+nTrials = 10000;
 blur = 0.1;
 
 %% lesioned?
@@ -88,17 +88,15 @@ end
 b = b/sum(b);
 
 theta_policy  = zeros(S,2);     % policy weights
-%theta_policy(:,1) = 0.02;     % policy weights
-%theta_policy(end,2) = 0; % always tap at the beginning
-%theta_policy([7,26],2) = 0.5;
-%theta_policy(14,1) = 1;
-%theta_policy([1:6,8:13,14:25],1) = 0.7;
+theta_policy(3,2) = 0.2;     % innate bias to tap at 300ms
+theta_policy(4,2) = 0.2;     % innate bias to tap at 300ms
+
 w_value  = zeros(S,1);          % value weights
-C = 0.05;%cost to tap
+C = 0.3;%cost to tap
 
 %% initialize learning parameters
-alpha_policy = 0.2;         % policy learning rate
-alpha_value = 0.2;          % value learning rate
+alpha_policy = 0.1;         % policy learning rate
+alpha_value = 0.1;          % value learning rate
 gamma = 0.98;
 TE = 0.05; %temperature parameter in the policy (higher is more noisy)
 last_S = S;
@@ -242,63 +240,67 @@ for t = 1:nTrials
     results.c_state(t) = curr_S;
     results.observe(t) = x(t);
     results.action(t) = a(t);
+    results.s_action(t) = a(t)-1;
     results.p_action(t,:) = p_a;
     results.cost(t) = C;
     
     last_S = curr_S; %last state is now current state;
     
-    if a(t)==2
-        C = C+0.03;
-    elseif a(t)==1 && C>=0.03
-        C = C-0.03;
-        %theta_policy(26,2) = theta_policy(26,1)+.2;
+    if t>11
+        if sum(results.s_action(t-11:t))>2 && C<0.6
+            C = C+0.03;
+        %elseif a(t)==2
+        %    C = C+0.03;
+        elseif C>0.03
+            C = C-0.03;
+            %theta_policy(26,2) = theta_policy(26,1)+.2;
+        end
     end
-    
     
     
 end
 
 %% plots
 if plott ==1
-figure; hold on;
-
-% states over time
-subplot 511
-plot(results.l_state,'ro-');
-title('state')
-ylabel('state #')
-%xlabel('timesteps (a.u. ~100ms each)')
-
-% actions over time
-subplot 512
-plot(results.action,'go-');
-title('action chosen')
-ylabel(' action (1=wait, 2=tap)')
-%xlabel('timesteps (a.u. ~100ms each)')
-
-subplot 513
-imagesc(results.w');
-title('state value weights')
-ylabel('state #')
-set(gca,'YDir','normal')
-%xlabel('timesteps (a.u. ~100ms each)')
-
-subplot 514
-imagesc(results.b');
-title('inferred belief state')
-ylabel('state #')
-set(gca,'YDir','normal')
-%xlabel('timesteps (a.u. ~100ms each)')
-
-subplot 515
-imagesc(squeeze(results.theta(:,2,:)));
-ylabel('state #')
-xlabel('timesteps (a.u. ~100ms each)')
-set(gca,'YDir','normal')
-title('policy weights')
-
-suptitle(strcat('total correct trials: ',num2str(sum(x>1))));
-
+    figure; hold on;
+    
+    % states over time
+    subplot 511
+    plot(results.l_state,'ro-');
+    title('state')
+    ylabel('state #')
+    %xlabel('timesteps (a.u. ~100ms each)')
+    
+    % actions over time
+    subplot 512
+    plot(results.action,'go-');
+    title('action chosen')
+    ylabel(' action (1=wait, 2=tap)')
+    %xlabel('timesteps (a.u. ~100ms each)')
+    
+    subplot 513
+    imagesc(results.w');
+    title('state value weights')
+    ylabel('state #')
+    set(gca,'YDir','normal')
+    %xlabel('timesteps (a.u. ~100ms each)')
+    
+    subplot 514
+    imagesc(results.b');
+    title('inferred belief state')
+    ylabel('state #')
+    set(gca,'YDir','normal')
+    %xlabel('timesteps (a.u. ~100ms each)')
+    
+    subplot 515
+    imagesc(squeeze(results.theta(:,2,:)));
+    ylabel('state #')
+    xlabel('timesteps (a.u. ~100ms each)')
+    set(gca,'YDir','normal')
+    title('policy weights')
+    
+    suptitle(strcat('total correct trials: ',num2str(sum(x>1))));
+    
 end
 
 % figure

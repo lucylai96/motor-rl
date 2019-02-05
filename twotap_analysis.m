@@ -13,16 +13,21 @@ clear all
 
 [tap_idx]=find(results_intact.action == 2);
 
-tap_idx = [tap_idx tap_idx(end)+2];
+tap_idx = [tap_idx];
 dur_tap = diff(tap_idx); %tells you how much time between each tap, but not whether the tap was IPI or ITI
 
-IPI_start = tap_idx(results_intact.l_state(tap_idx)== 26); %index (timepoint) of when IPI started
-IPI_end = tap_idx(find(results_intact.l_state(tap_idx)== 26)+1); %index timepoint of IPI end
+IPI_start = tap_idx(results_intact.l_state(tap_idx(1:end-1))== 26); %index (timepoint) of when IPI started
+IPI_end = tap_idx(find(results_intact.l_state(tap_idx(1:end-1))== 26)+1); %index timepoint of IPI end
 IPI=((IPI_end-IPI_start)*100)./1000;
+IPI(IPI>1.2) = 1.2;
 
-ITI_start=tap_idx(results_intact.c_state(tap_idx)== 14); %index (timepoint) of when ITI started
-ITI_end = tap_idx(find(results_intact.c_state(tap_idx)== 14)+1); %index timepoint of IPI end
+ITI_start = intersect(IPI_end,tap_idx(results_intact.c_state(tap_idx(1:end-1))== 14));
+ITI_end = intersect( tap_idx(find(results_intact.l_state(tap_idx(1:end-2))== 26)+2), tap_idx(find(results_intact.c_state(tap_idx(1:end-1))== 14)+1));
+
+%ITI_start=tap_idx(results_intact.c_state(tap_idx(1:end-1))== 14); %index (timepoint) of when ITI started
+%ITI_end = tap_idx(find(results_intact.c_state(tap_idx(1:end-1))== 14)+1); %index timepoint of IPI end
 ITI=((ITI_end-ITI_start)*100)./1000;
+ITI = ITI;
 
 [a,idx]=sort([ITI_start IPI_start]);
 ALL_int=[ITI IPI];
@@ -30,7 +35,7 @@ ALL_int=[ITI IPI];
 for i = 1:length(ALL_int)
     % basically look at whether the next thing is an IPI or ITI (really
     % dumb way to do things)
-    if idx(i)< length(ITI)
+    if idx(i)<= length(ITI)
         ITI_final(i) = ALL_int(idx(i));
         IPI_final(i) = NaN;
     else
@@ -59,16 +64,20 @@ figure
 
 [tap_idx]=find(results_lesioned.action == 2);
 
-tap_idx = [tap_idx tap_idx(end)+2];
+tap_idx = [tap_idx];
 dur_tap = diff(tap_idx); %tells you how much time between each tap, but not whether the tap was IPI or ITI
 
-IPI_start = tap_idx(results_lesioned.l_state(tap_idx)== 26); %index (timepoint) of when IPI started
-IPI_end = tap_idx(find(results_lesioned.l_state(tap_idx)== 26)+1); %index timepoint of IPI end
+IPI_start = tap_idx(results_lesioned.l_state(tap_idx(1:end-1))== 26); %index (timepoint) of when IPI started
+IPI_end = tap_idx(find(results_lesioned.l_state(tap_idx(1:end-1))== 26)+1); %index timepoint of IPI end
 IPI=((IPI_end-IPI_start)*100)./1000;
+IPI(IPI>1.2) = 1.2;
 
-ITI_start=tap_idx(results_lesioned.c_state(tap_idx)== 14); %index (timepoint) of when ITI started
-ITI_end = tap_idx(find(results_lesioned.c_state(tap_idx)== 14)+1); %index timepoint of IPI end
-ITI=((ITI_end-ITI_start)*100)./1000;
+ITI_start = intersect(IPI_end,tap_idx(results_lesioned.c_state(tap_idx(1:end-1))== 14));
+ITI_end = intersect( tap_idx(find(results_lesioned.l_state(tap_idx(1:end-2))== 26)+2), tap_idx(find(results_lesioned.c_state(tap_idx(1:end-1))== 14)+1));
+
+%ITI_start=tap_idx(results_lesioned.c_state(tap_idx(1:end-1))== 14); %index (timepoint) of when ITI started
+%ITI_end = tap_idx(find(results_lesioned.c_state(tap_idx(1:end-1))== 14)+1); %index timepoint of IPI end
+ITI=((ITI_end-ITI_start)*100)./1000;ITI=((ITI_end-ITI_start)*100)./1000;
 
 [a,idx]=sort([ITI_start IPI_start]);
 ALL_int=[ITI IPI];
