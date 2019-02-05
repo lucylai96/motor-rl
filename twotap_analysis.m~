@@ -9,7 +9,10 @@ function twotap_analysis
 close all
 clear all
 %% plots of ITI vs trials (intact)
-[results_intact,results_lesioned]=twotap_world(1);
+plt = 1;
+lrn = 1;
+div = 1;
+[results_intact,results_lesioned]=twotap_world(plt,lrn,div);
 
 [tap_idx]=find(results_intact.action == 2);
 
@@ -22,9 +25,7 @@ IPI=((IPI_end-IPI_start)*100)./1000;
 IPI(IPI>1.2) = 1.2;
 
 ITI_start = intersect(IPI_end,tap_idx(results_intact.c_state(tap_idx(1:end-1))== 14));
-%ITI_end = tap_idx(results_intact.c_state(tap_idx(1:end-1))== 14)+1;
-
-ITI_end = intersect(tap_idx(results_intact.c_state(tap_idx(1:end-2))== 14)+2, tap_idx(find(results_intact.l_state(tap_idx(1:end-2))== 26)+2));
+ITI_end = intersect( tap_idx(find(results_intact.l_state(tap_idx(1:end-2))== 26)+2), tap_idx(find(results_intact.c_state(tap_idx(1:end-1))== 14)+1));
 
 %ITI_start=tap_idx(results_intact.c_state(tap_idx(1:end-1))== 14); %index (timepoint) of when ITI started
 %ITI_end = tap_idx(find(results_intact.c_state(tap_idx(1:end-1))== 14)+1); %index timepoint of IPI end
@@ -74,9 +75,12 @@ IPI_end = tap_idx(find(results_lesioned.l_state(tap_idx(1:end-1))== 26)+1); %ind
 IPI=((IPI_end-IPI_start)*100)./1000;
 IPI(IPI>1.2) = 1.2;
 
-ITI_start=tap_idx(results_lesioned.c_state(tap_idx(1:end-1))== 14); %index (timepoint) of when ITI started
-ITI_end = tap_idx(find(results_lesioned.c_state(tap_idx(1:end-1))== 14)+1); %index timepoint of IPI end
-ITI=((ITI_end-ITI_start)*100)./1000;
+ITI_start = intersect(IPI_end,tap_idx(results_lesioned.c_state(tap_idx(1:end-1))== 14));
+ITI_end = intersect( tap_idx(find(results_lesioned.l_state(tap_idx(1:end-2))== 26)+2), tap_idx(find(results_lesioned.c_state(tap_idx(1:end-1))== 14)+1));
+
+%ITI_start=tap_idx(results_lesioned.c_state(tap_idx(1:end-1))== 14); %index (timepoint) of when ITI started
+%ITI_end = tap_idx(find(results_lesioned.c_state(tap_idx(1:end-1))== 14)+1); %index timepoint of IPI end
+ITI=((ITI_end-ITI_start)*100)./1000;ITI=((ITI_end-ITI_start)*100)./1000;
 
 [a,idx]=sort([ITI_start IPI_start]);
 ALL_int=[ITI IPI];

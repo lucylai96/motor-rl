@@ -1,4 +1,4 @@
-function [results_intact,results_lesioned]=twotap_world(plt)
+function [results_intact,results_lesioned]=twotap_world(plt,lrn,div)
 % purpose: simulate the world in the 2-tap task
 % macro-states = {1:start, 2:IPI, 3:ITI, 4:reward}
 % micro-states = {1-13 is IPI, 14-25 is ITI, 26 is rew, 27 is start}
@@ -78,17 +78,18 @@ T(26,26,1)=1;
 % page 2: tap
 T(1,14,2)=1;
 T(2,14,2)=1;
-T(3,14,2)=1;
-T(4,14,2)=1;
-T(5,14,2)=0.5;
-T(6,14,2)=0.5;
+T(3,14,2)=0;
+T(4,14,2)=0;
 
-T(5,26,2)=0.5;
-T(6,26,2)=0.5;
-T(7,26,2)=1;
-T(8,26,2)=1;
+T(3,26,2)=1;
+T(4,26,2)=1;
+%T(7,26,2)=1;
+%T(8,26,2)=1;
 
-%T(8,14,2)=1;
+T(5,14,2)=1;
+T(6,14,2)=1;
+T(7,14,2)=1;
+T(8,14,2)=1;
 T(9,14,2)=1;
 T(10,14,2)=1;
 T(11,14,2)=1;
@@ -110,26 +111,15 @@ T(25,14,2)=1;
 %T(26,27,2)=1; %if you tap you go to 27 (redundant)
 T(26,1,2)=1;
 
-%figure; hold on
-%subplot 121
-%imagesc(T(:,:,1)); % for "nothing"
-%title('A = nothing')
-%subplot 122
-%imagesc(T(:,:,2)); % for "tap"
-%title('A = tap')
-%suptitle('transition matrices')
-
-
-
 
 %% "intact" animal
 
-results_intact= twotap_agent(O,T,0,plt);
+results_intact= twotap_agent(O,T,0,plt,lrn,div);
 
 
 %% "lesioned" animal
 
-results_lesioned = twotap_agent(O,T,1,plt);
+results_lesioned = twotap_agent(O,T,1,plt,lrn,div);
 % the lesioned animal only knows the IPI and not the ITI
 % wait, so the transition matrix should stay the same, but
 

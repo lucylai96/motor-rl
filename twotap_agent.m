@@ -1,4 +1,4 @@
-function results = twotap_agent(O,T,lesioned,plott)
+function results = twotap_agent(O,T,lesioned,plt,lrn,div)
 % PURPOSE: simulate the agent navigating the 2-tap task, actor-critic learning for POMDPs
 % AUTHOR: lucy lai
 %
@@ -21,8 +21,9 @@ function results = twotap_agent(O,T,lesioned,plott)
 %        .rpe - TD error (after updating)
 %
 
-nTrials = 10000;
+nTrials = div*10;
 blur = 0.1;
+C = 0.2; % cost to tap
 
 %% lesioned?
 if lesioned ==1
@@ -67,6 +68,7 @@ T(:,:,1) = newT;
 % ylabel('s(t)')
 % title('transition matrix: wait')
 
+
 %% initialize states and weights
 % initialization
 S = size(T,1);      % number of states
@@ -88,23 +90,35 @@ end
 b = b/sum(b);
 
 theta_policy  = zeros(S,2);     % policy weights
-theta_policy(3,2) = 0.2;     % innate bias to tap at 300ms
-theta_policy(4,2) = 0.2;     % innate bias to tap at 300ms
+theta_policy(3,2) = 0.3;     % innate bias to tap at 300ms
+theta_policy(4,2) = 0.3;     % innate bias to tap at 300ms
 
 w_value  = zeros(S,1);          % value weights
-C = 0.3;%cost to tap
+
 
 %% initialize learning parameters
-alpha_policy = 0.1;         % policy learning rate
-alpha_value = 0.1;          % value learning rate
+alpha_policy = 0.4;         % policy learning rate
+alpha_value = 0.4;          % value learning rate
 gamma = 0.98;
-TE = 0.05; %temperature parameter in the policy (higher is more noisy)
+TE = 0.5; %temperature parameter in the policy (higher is more noisy)
 last_S = S;
 
 
 
 
 for t = 1:nTrials
+    
+    
+    
+    %% changing environment
+    if lrn
+         T_new = twotap_changeworld(T,t,div);
+         
+        if mod(t,div) ==0%
+         change(t) = 1;
+         end
+         T = T_new;
+    end
     
     %% take an action according to policy
     
@@ -197,7 +211,7 @@ for t = 1:nTrials
     %b(curr_S) = 1;
     % b = b0'*(T(:,:,a(t)).*squeeze(O(:,a(t),x(t))));
     % b = b';
-    
+  
     b = b./sum(b); %normalize
     
     if any(isnan(b))
@@ -246,29 +260,46 @@ for t = 1:nTrials
     
     last_S = curr_S; %last state is now current state;
     
+% if t>1
+%         if a(t)==2 && a(t-1)==2
+%             C = C+0.1;
+%         %elseif a(t)==2
+%         %    C = C+0.03;
+%         elseif a(t)==2
+%             C = C+0.2;
+%         elseif C>0.03
+%             C = C-0.03;
+%             %theta_policy(26,2) = theta_policy(26,1)+.2;
+%         end
+% end
+
+    
     if t>11
-        if sum(results.s_action(t-11:t))>2 && C<0.6
+        if sum(results.s_action(t-11:t))>2 && C<0.4
             C = C+0.03;
         %elseif a(t)==2
         %    C = C+0.03;
-        elseif C>0.03
+        elseif C>0.1
             C = C-0.03;
             %theta_policy(26,2) = theta_policy(26,1)+.2;
         end
     end
     
     
+    
 end
 
 %% plots
-if plott ==1
+if plt ==1
     figure; hold on;
+    idx_change =find(change==1)
     
     % states over time
     subplot 511
     plot(results.l_state,'ro-');
     title('state')
     ylabel('state #')
+    line([idx_change' idx_change'],[repmat([1 25],10,1)],'Color','k')
     %xlabel('timesteps (a.u. ~100ms each)')
     
     % actions over time
@@ -282,6 +313,7 @@ if plott ==1
     imagesc(results.w');
     title('state value weights')
     ylabel('state #')
+    line([idx_change' idx_change']',[repmat([1 25],10,1)]','Color','r')
     set(gca,'YDir','normal')
     %xlabel('timesteps (a.u. ~100ms each)')
     
@@ -289,6 +321,7 @@ if plott ==1
     imagesc(results.b');
     title('inferred belief state')
     ylabel('state #')
+    line([idx_change' idx_change']',[repmat([1 25],10,1)]','Color','r')
     set(gca,'YDir','normal')
     %xlabel('timesteps (a.u. ~100ms each)')
     
@@ -297,6 +330,7 @@ if plott ==1
     ylabel('state #')
     xlabel('timesteps (a.u. ~100ms each)')
     set(gca,'YDir','normal')
+    line([idx_change' idx_change']',[repmat([1 25],10,1)]','Color','r')
     title('policy weights')
     
     suptitle(strcat('total correct trials: ',num2str(sum(x>1))));

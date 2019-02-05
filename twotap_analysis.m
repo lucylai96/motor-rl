@@ -9,7 +9,10 @@ function twotap_analysis
 close all
 clear all
 %% plots of ITI vs trials (intact)
-[results_intact,results_lesioned]=twotap_world(1);
+plt = 1;
+lrn = 1;
+div = 1500;
+[results_intact,results_lesioned]=twotap_world(plt,lrn,div);
 
 [tap_idx]=find(results_intact.action == 2);
 
