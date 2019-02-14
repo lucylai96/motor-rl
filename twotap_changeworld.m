@@ -1,4 +1,4 @@
-function T = twotap_changeworld(T, tNum,div)
+function T = twotap_changeworld(T, tNum,div,lrn)
 % inputs:
 %      T_tap = second "page" of transition matrix, what happens when you tap.
 %      Basically assigns which intervals get reward.
@@ -7,78 +7,98 @@ function T = twotap_changeworld(T, tNum,div)
 %div = 1000;
 
 
-% if mod(tNum,div) ==1%
-%     figure(100); hold on;
-%     subplot 121
-%     imagesc(T(:,:,1)); % for "nothing"
-%     set(gca,'YDir','normal')
-%     title('A = nothing')
-%     
-%     subplot 122
-%     imagesc(T(:,:,2)); % for "tap"
-%     title('A = tap')
-%     set(gca,'YDir','normal')
-%     suptitle('transition matrices')
-%    
-% end
+if mod(tNum,div) ==1%
+    figure(100); hold on;
+    subplot 121
+    imagesc(T(:,:,1)); % for "nothing"
+    set(gca,'YDir','normal')
+    title('A = nothing')
 
+    subplot 122
+    imagesc(T(:,:,2)); % for "tap"
+    title('A = tap')
+    set(gca,'YDir','normal')
+    suptitle('transition matrices')
+   % pause(.1)
+
+end
+
+if lrn ==1
 
 if tNum>div && tNum<div*2
     
-    T(3,14,2)=1;
-    T(3,26,2)=0;
+    T(3,13,2)=1;
+    T(3,25,2)=0;
     
-    T(5,26,2)=1;
-    T(5,14,2)=0;
+    %  T(5,25,2)=1;
+    % T(5,13,2)=0;
     
 elseif tNum>div*2 && tNum<div*3
-    %T(7,26,2)=1;
-    %T(8,26,2)=1;
+    %T(7,25,2)=1;
+    %T(8,25,2)=1;
     
-    T(4,14,2)=1;
-    T(4,26,2)=0;
+    T(4,13,2)=1;
+    T(4,25,2)=0;
     
-    T(6,26,2)=1;
-    T(6,14,2)=0;
+    %T(6,25,2)=1;
+    %T(6,13,2)=0;
     
-elseif tNum>div*3 && tNum<div*4
+elseif tNum>div*3 && tNum<div*6
     
-    T(5,14,2)=1;
-    T(5,26,2)=0;
+    T(5,13,2)=1;
+    T(5,25,2)=0;
     
-    T(7,26,2)=1;
-    T(7,14,2)=0;
+    %T(7,25,2)=1;
+    %T(7,13,2)=0;
     
-elseif tNum>div*4 && tNum<div*5
+elseif tNum>div*6 && tNum<div*10
     
-    T(6,14,2)=1;
-    T(6,26,2)=0;
+    T(6,13,2)=1;
+    T(6,25,2)=0;
     
-    T(8,26,2)=1;
-    T(8,14,2)=0;
+    T(8,25,2)=1;
+    T(8,13,2)=0;
     
+end
     %% seven-five-seven
-elseif tNum>div*5 && tNum<div*6
+if lrn==2
+    if tNum>0  && tNum<div*3
+    T(6,13,2)=0;
+    T(6,25,2)=1;
     
-
+    T(7,13,2)=0;
+    T(7,25,2)=1;
     
-elseif tNum>div*6 && tNum<div*8
+    T(8,25,2)=1;
+    T(8,13,2)=0;
     
-    T(7,14,2)=1;
-    T(7,26,2)=0;
-    T(8,14,2)=1;
-    T(8,26,2)=0;
     
-    T(5,26,2)=1;
-    T(5,14,2)=0;
     
-elseif tNum>div*8 && tNum<div*10
-      T(5,14,2)=1;
-         T(5,26,2)=0;
-         
-            T(7,26,2)=1;
-    T(7,14,2)=0;
+elseif tNum>div*3 && tNum<div*7
     
+    T(7,13,2)=1;
+    T(7,25,2)=0;
+    T(8,13,2)=1;
+    T(8,25,2)=0;
+    
+    T(5,25,2)=1;
+    T(5,13,2)=0;
+    T(4,13,2)=0;
+    T(4,25,2)=1;
+    
+elseif tNum>div*7 && tNum<div*10
+    T(5,13,2)=1;
+    T(5,25,2)=0;
+    T(4,13,2)=1;
+    T(4,25,2)=0;
+    
+    
+    T(7,25,2)=1;
+    T(7,13,2)=0;
+    T(8,25,2)=1;
+    T(8,13,2)=0;
+    
+    end
 end
 
 

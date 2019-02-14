@@ -22,41 +22,41 @@ function results = twotap_agent(O,T,lesioned,plt,lrn,div)
 %
 
 nTrials = div*10;
-blur = 0.1;
-C = 0.2; % cost to tap
+blur = 0.25;
+C = 0.3; % cost to tap
 
 %% lesioned?
 if lesioned ==1
-    T_lesion = T([1:13 26],[1:13 26],:);
-    T_lesion(13,14,1) = 1;
+    T_lesion = T([1:12 25],[1:12 25],:);
+    T_lesion(12,13,1) = 1;
     T_lesion(:,1,2) = 1;  % if you tap too early, state goes back to 1
     T_lesion(5,1,2) = 0.5; % except in these states
     T_lesion(6,1,2) = 0.5;
     T_lesion(7,1,2) = 0;
     T_lesion(8,1,2) = 0;
-    T_lesion(7,14,2) = 1;
-    T_lesion(8,14,2) = 1;
-    T_lesion(14,14,2) = 0;
+    T_lesion(7,13,2) = 1;
+    T_lesion(8,13,2) = 1;
+    T_lesion(13,13,2) = 0;
     
     for i = 1:size(T_lesion,1)
         G_blur_les(i,:) = normpdf(1:size(T_lesion,1),i,blur*i);
     end
-    G_blur_les = [zeros(size(T_lesion,1),1) G_blur_les(:,1:13)];
+    G_blur_les = [zeros(size(T_lesion,1),1) G_blur_les(:,1:12)];
     newT_lesion = T_lesion(:,:,1)+G_blur_les;
     newT_lesion=newT_lesion./sum(newT_lesion,2);
     T_lesion(:,:,1) = newT_lesion;
     
-    O_lesion = O([1:13 26],:,:);
+    O_lesion = O([1:12 25],:,:);
     
-    O_lesion(14,2,1) = 0;
-    O_lesion(14,2,2) = 1; %only way they see reward is when they have just tapped
+    O_lesion(13,2,1) = 0;
+    O_lesion(13,2,2) = 1; %only way they see reward is when they have just tapped
 end
 
 
-for i = 1:26
-    G_blur(i,:) = normpdf(1:26,i,blur*i);
+for i = 1:25
+    G_blur(i,:) = normpdf(1:25,i,blur*i);
 end
-G_blur = [zeros(26,1) G_blur(:,1:25)];
+G_blur = [zeros(25,1) G_blur(:,1:24)];
 
 newT = T(:,:,1)+G_blur;
 newT=newT./sum(newT,2);
@@ -74,15 +74,15 @@ T(:,:,1) = newT;
 S = size(T,1);      % number of states
 b = ones(S,1)/S;    % belief state
 if lesioned ==1
-    b(14:25) = 0; %no belief in these states
+    b(13:25) = 0; %no belief in these states
 end
 %
 % blur = 0.1; %proportionality constant for Gaussian blur
 %
 % for i = 1:S-1
-%     G_blur(i,:) = normpdf(1:26,i,blur*i);
+%     G_blur(i,:) = normpdf(1:25,i,blur*i);
 % end
-% G_blur(26,:) = max(G_blur(:)).*ones(1,S);
+% G_blur(25,:) = max(G_blur(:)).*ones(1,S);
 
 %
 % G_blur = G_blur./max(G_blur(:));
@@ -100,8 +100,24 @@ w_value  = zeros(S,1);          % value weights
 alpha_policy = 0.4;         % policy learning rate
 alpha_value = 0.4;          % value learning rate
 gamma = 0.98;
-TE = 0.5; %temperature parameter in the policy (higher is more noisy)
+TE = 0.4; %temperature parameter in the policy (higher is more noisy)
 last_S = S;
+
+
+% figure; hold on;
+% 
+% subplot 121
+% imagesc(T(:,:,1)); % for "null"
+% title('a = null')
+% axis square
+% set(gca,'YDir','normal')
+% 
+% subplot 122
+% imagesc(T(:,:,2)); % for "tone"
+% axis square
+% set(gca,'YDir','normal')
+% title('a = tap')
+% suptitle('transition matrices')
 
 
 
@@ -111,12 +127,12 @@ for t = 1:nTrials
     
     
     %% changing environment
-    if lrn
-         T_new = twotap_changeworld(T,t,div);
+    if lrn~=0
+         T_new = twotap_changeworld(T,t,div,lrn);
          
-        if mod(t,div) ==0%
-         change(t) = 1;
-         end
+        %if sum(T_new(:)-T(:)) ~=0
+        % change(t) = 1;
+       % end
          T = T_new;
     end
     
@@ -166,11 +182,11 @@ for t = 1:nTrials
     [x(t), curr_S] = twotap_env(last_S,a(t), O, T);
     
     %if lesioned ==1
-    %    if curr_S>13 && curr_S<26
+    %    if curr_S>12 && curr_S<25
     %        b0(curr_S) = 0;
-    %        b0(curr_S-13) =1;
+    %        b0(curr_S-12) =1;
     %        b(curr_S) = 0;
-    %        b(curr_S-13) =1;
+    %        b(curr_S-12) =1;
     %    end
     %end
     
@@ -178,13 +194,13 @@ for t = 1:nTrials
     
     if lesioned ==1
         b0= b; % old posterior, used later
-        b = b([1:13,26]);
+        b = b([1:12,25]);
         b0_lesion= b; % old posterior, used later
         b = ((T_lesion(:,:,a(t))'*b0_lesion).*squeeze(O_lesion(:,a(t),x(t))));
-        b = [b(1:13); zeros(12,1); b(14)];
+        b = [b(1:12); zeros(12,1); b(13)];
         %[~,idx]=max(b');
         %b = b+G_blur(idx,:)'; %currently blurring belief by absolute time, may not be super plausible, maybe the reset happens when they tap
-        %b = [b(1:13); zeros(12,1); b(14)];
+        %b = [b(1:12); zeros(12,1); b(13)];
         
     else
         
@@ -269,7 +285,7 @@ for t = 1:nTrials
 %             C = C+0.2;
 %         elseif C>0.03
 %             C = C-0.03;
-%             %theta_policy(26,2) = theta_policy(26,1)+.2;
+%             %theta_policy(25,2) = theta_policy(25,1)+.2;
 %         end
 % end
 
@@ -281,7 +297,7 @@ for t = 1:nTrials
         %    C = C+0.03;
         elseif C>0.1
             C = C-0.03;
-            %theta_policy(26,2) = theta_policy(26,1)+.2;
+            %theta_policy(25,2) = theta_policy(25,1)+.2;
         end
     end
     
@@ -292,14 +308,14 @@ end
 %% plots
 if plt ==1
     figure; hold on;
-    idx_change =find(change==1)
+   % idx_change =find(change==1);
     
     % states over time
     subplot 511
     plot(results.l_state,'ro-');
     title('state')
     ylabel('state #')
-    line([idx_change' idx_change'],[repmat([1 25],10,1)],'Color','k')
+   % line([idx_change' idx_change']',[repmat([0 26],10,1)]','Color','k')
     %xlabel('timesteps (a.u. ~100ms each)')
     
     % actions over time
@@ -313,7 +329,7 @@ if plt ==1
     imagesc(results.w');
     title('state value weights')
     ylabel('state #')
-    line([idx_change' idx_change']',[repmat([1 25],10,1)]','Color','r')
+  %  line([idx_change' idx_change']',[repmat([0 26],10,1)]','Color','r')
     set(gca,'YDir','normal')
     %xlabel('timesteps (a.u. ~100ms each)')
     
@@ -321,7 +337,7 @@ if plt ==1
     imagesc(results.b');
     title('inferred belief state')
     ylabel('state #')
-    line([idx_change' idx_change']',[repmat([1 25],10,1)]','Color','r')
+   % line([idx_change' idx_change']',[repmat([0 26],10,1)]','Color','r')
     set(gca,'YDir','normal')
     %xlabel('timesteps (a.u. ~100ms each)')
     
@@ -330,7 +346,7 @@ if plt ==1
     ylabel('state #')
     xlabel('timesteps (a.u. ~100ms each)')
     set(gca,'YDir','normal')
-    line([idx_change' idx_change']',[repmat([1 25],10,1)]','Color','r')
+   % line([idx_change' idx_change']',[repmat([0 26],10,1)]','Color','r')
     title('policy weights')
     
     suptitle(strcat('total correct trials: ',num2str(sum(x>1))));
