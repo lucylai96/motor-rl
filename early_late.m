@@ -1,13 +1,11 @@
-function PCA_exploration
+function early_late
 close all
-% purpose: this function examines how the transition between different taps
-% as defined in PCA space is
-
-% a goal is to be able to visualize how taps are explored in a space for% a goal is to be able to visualize how taps are explored in a space for
-% lesioned vs nonlesioned animals
+% purpose: this function examines the transition matrix early and late in
+% learning
 
 
 %% adding dependencies
+addpath('/Users/lucy/Google Drive/YauLab/Matlab/Tools/')
 addpath('/Volumes/GoogleDrive/Team Drives/MC Learning Project/Matlab')
 addpath('/Volumes/GoogleDrive/Team Drives/MC Learning Project/Matlab/output/')
 addpath('/Volumes/GoogleDrive/Team Drives/MC Learning Project/Matlab/gerald new code/')
@@ -24,8 +22,8 @@ addpath('/Volumes/GoogleDrive/Team Drives/MC Learning Project/Matlab/gerald new 
 %GP1838_001_099_taps_pv_aah
 %GP1840_001_059_taps_pv_aah
 
-
 %% position AND velocity (taps)
+tap_exploration('multi_trials_p_aah.mat')% this guy systematically undershot IPI, no stereotyped ITI but did learn some low CV for IPI
 
 % 16889 trials
 tap_exploration('GP1829_001_061_taps_pv_aah.mat') %naive partial lesion but seemed to learn IPI kind of (after 5000 trials), and ITI kind of!!
@@ -91,7 +89,7 @@ tap_exploration('GP1840_001_059_taps_v_aah.mat')% learned around 5k trials
 
 %% multi rat
 % multiple rats
-tap_exploration('multi_trials_v_aah.mat',3)% this guy systematically undershot IPI, no stereotyped ITI but did learn some low CV for IPI
+tap_exploration('multi_trials_pv_aah.mat',3)% this guy systematically undershot IPI, no stereotyped ITI but did learn some low CV for IPI
 
 
 end
@@ -115,36 +113,36 @@ analysis=reconstructTrajectories(analysis);
 %% first plot the first two PCAs
 
 figure;
-subplot 331;
+%subplot 331;
 struct_unzip(analysis);
 % group numss = {'ratnum (for multi)','1 ipi','2 taptype','3 tapnum','4 rewards','5 rewarded','6 trialnum','7 sessnum','8 daynum'};
 % {'tap1','holdtime'} 'rewards50' 'rewarded50'
-[dims,plt,idx]=vis(analysis,1); axis square; % group 1 is ipi
+%[dims,plt,idx]=vis(analysis,1); axis square; % group 1 is ipi
 
-subplot 332;
+%subplot 332;
 [dims,plt,idx]=vis(analysis,2); axis square; % group 2
 taptype = taptype(idx);
-
-subplot 333; hold on
-[dims,plt,idx]=vis(analysis,3); axis square; % group 3
-tapnum = tapnum(idx);
-
-subplot 334; hold on
+close
+%subplot 333; hold on
+%[dims,plt,idx]=vis(analysis,3); axis square; % group 3
+%tapnum = tapnum(idx);
+%close all
+%subplot 334; hold on
 [dims,plt,idx,rewards]=vis(analysis,4); axis square; % group 4
 rewards = rewards(idx);
-
-subplot 335; hold on
-[dims,plt,idx]=vis(analysis,5); axis square; % group 5
-
-subplot 336; hold on
-[dims,plt,idx]=vis(analysis,6); axis square; % group 6
-
-subplot 337; hold on
-[dims,plt,idx]=vis(analysis,7); axis square; % group 7
-
-
-subplot 338; hold on
-[dims,plt,idx]=vis(analysis,8); axis square; % group 8
+close
+% subplot 335; hold on
+% [dims,plt,idx]=vis(analysis,5); axis square; % group 5
+%
+% subplot 336; hold on
+% [dims,plt,idx]=vis(analysis,6); axis square; % group 6
+%
+% subplot 337; hold on
+% [dims,plt,idx]=vis(analysis,7); axis square; % group 7
+%
+%
+% subplot 338; hold on
+% [dims,plt,idx]=vis(analysis,8); axis square; % group 8
 
 
 %% bin the PCs into 10 equal parts
@@ -153,165 +151,239 @@ subplot 338; hold on
 %rewards = rewards(idx);
 dims = dims(taptype>0,:);% take out 1-tap trials
 rewards = rewards(taptype>0);
-N = 5; %dividing the space of PCs equally depending on the range of max PCs
-%[bins,bounds] = discretize(dims(:,1:2),N);
-[n,xb,yb,xbin,ybin] = histcounts2(dims(:,1),dims(:,2),[N N]);
-bins = [xbin ybin];
+dims_early = dims(1:2000,:);%first 2000 trials
+dims_late = dims(end-1999:end,:);%first 2000 trials
 
-% need to define the space in which
-plots = 0
-if plots == 1
-    cmap=colormap(gca,jet(size(bins,1)));
-    % plot the transitions between taps
-    figure; hold on
-    axis([0 50 0 50])
-    for i =1:25:length(plt)-25
-        % scatter(dims(plt,1),dims(plt,2),[],sessnum(idx),'.'); str = 'Session #'; colormap(jet(max(sessions)));
-        scatter(bins(i:i+24,1),bins(i:i+24,2),[],cmap(i:i+24,:),'.');
-        pause(0.01)
-        
-        
-    end
-end
+%% first just visualize where the first and last 2000 trials are
+figure
+scatter(dims_early(:,1),dims_early(:,2),'b.'); hold on
+scatter(dims_late(:,1),dims_late(:,2),'r.')
+legend('early','late')
+xlabel('pc 1')
+ylabel('pc 2')
+prettyplot
+
+%% first do analyses on early trials
+N = 5; %dividing the space of PCs equally depending on the range of max PCs
+dims_all = [dims_early;dims_late];
+%[bins,bounds] = discretize(dims_all(:,1:2),N);
+[~,~,~,xbin,ybin] = histcounts2(dims_all(:,1),dims_all(:,2),[N N]);
+bins = [xbin ybin];
+%[bins,bounds] = discretize(dims_early(:,1:2),N);
+
 %% make the bins into a matrix (NxN)
 % these are the N^2 diff kinds of taps
 
-tapNum = transformMatrix(bins); %the tap "number"
+tapNum_early = transformMatrix(bins(1:2000,:)); %the tap "number"
 
 % have to assign each tap to a bin
 % T is N^2
-subplot 339; hold on;
 
-T = zeros(N^2);
-R = zeros(N^2);
-%T_plt=zeros(N^2,N^2, mod(size(tapNum),100));
-for i = 1:2:size(tapNum,2)-2 %only look at the tap 1--> tap 2 transitions
+T_early = zeros(N^2);
+R_early = zeros(N^2);
+rewards_early = rewards(1:2000);
+%T_plt=zeros(N^2,N^2, mod(size(tapNum_early),100));
+for i = 1:2:size(tapNum_early,2)-2 %only look at the tap 1--> tap 2 transitions
     
-    T(tapNum(i), tapNum(i+1)) =  T(tapNum(i), tapNum(i+1))+1; %fill in transition matrix
-    R(tapNum(i), tapNum(i+1)) = R(tapNum(i), tapNum(i+1))+rewards(i);%rewards for that transition
+    T_early(tapNum_early(i), tapNum_early(i+1)) =  T_early(tapNum_early(i), tapNum_early(i+1))+1; %fill in transition matrix
+    R_early(tapNum_early(i), tapNum_early(i+1)) = R_early(tapNum_early(i), tapNum_early(i+1))+rewards_early(i);%rewards for that transition
 end
 
-counts =histcounts(tapNum);
+counts =histcounts(tapNum_early);
 sumCts = sum(counts);
-TT = T/sumCts; %proportion transition matrix
-
-%% counts the kollomergen way
-% for i = 1:length(counts)
-%     for j = 1:length(counts)
-%         NH(i,j) = (counts(i).*counts(j))./sumCts;
-%     end
-% end
+%TT = T_early/sumCts; %proportion transition matrix
 
 %% shuffling all taps
 T2 = zeros(N^2);
-for p = 1:500
-    tapNum2= tapNum(randperm(length(tapNum)));
-    %disp(tapNum2(1:5))
-    for i = 1:2:size(tapNum2,2)-1
-        T2(tapNum2(i), tapNum2(i+1),p) =  T2(tapNum2(i), tapNum2(i+1))+1; %fill in transition matrix
-        
+R2 = zeros(N^2);
+for p = 1:1000
+    scr = randperm(length(tapNum_early));
+    tapNum_early2= tapNum_early(scr);
+    rewards_scr = rewards(scr);
+    %disp(tapNum_early2(1:5))
+    for i = 1:2:size(tapNum_early2,2)-1
+        T2(tapNum_early2(i), tapNum_early2(i+1),p) =  T2(tapNum_early2(i), tapNum_early2(i+1))+1; %fill in transition matrix
+        R2(tapNum_early2(i), tapNum_early2(i+1),p) = R2(tapNum_early2(i), tapNum_early2(i+1))+rewards_scr(i);%rewards for that transition
+
     end
-    T2(:,:,p) = T2(:,:,p)./sumCts;
+    %T2(:,:,p) = T2(:,:,p)./sumCts;
 end
 
+% taps
+TTT_early=T_early./prctile(T2,97.5,3); %most conservative estimate
+TTT_early(TTT_early<1) =0;
 
-
-TTT=TT./max(T2,[],3); %most conservative estimate
-%figure;
-imagesc(TTT)
-%imagesc(T)
+figure;
+subplot 321
+imagesc(log(TTT_early));set(gca,'YDir','normal');
 
 xlabel('tap(t+1)')
 ylabel('tap(t)')
 axis square
 c = colorbar;
-c.Label.String = 'Number of Transitions';
-title('Transition Matrix')
-suptitle(rat(1:6))
+c.Label.String = 'Expected:Shuffled Transitions';
+title('Transition Matrix (Early)')
+prettyplot(12)
 
-set(gcf,'color','w');
-set(gcf,'Position',[100 100 700 600]);
+% rewards
+RRR_early=R_early./prctile(R2,97.5,3); %most conservative estimate
+RRR_early(RRR_early<1) =0;
 
+subplot 323
+imagesc(log(RRR_early));set(gca,'YDir','normal');
+xlabel('tap(t+1)')
+ylabel('tap(t)')
+axis square
+colormap(gca,flipud(hot));
+c = colorbar;
+c.Label.String = 'Expected:Shuffled Transitions';
+title('Rewards Matrix (Early)')
+prettyplot(12)
 
-%% raw counts
-figure;subplot 131; imagesc(T);axis square
-subplot 132;imagesc(R); colormap(gca,flipud(hot));axis square;
-subplot 133;scatter(reshape(T,[1 N^4]),reshape(R,[1 N^4]));axis square; dline;
+%% next, do analyses on late trials (keep same bins)
 
+%% make the bins into a matrix (NxN)
+% these are the N^2 diff kinds of taps
 
-% plot the kind of tap (tap #?) by time
-if plots == 1
-    id = 1;
-    skp = 300; %how many frames to plot at once
-    figure; maxx=histogram(tapNum);
-    axismax = max(maxx.BinCounts);
-    for i = 1:size(tapNum,2)-1
-        T(tapNum(i), tapNum(i+1)) =  T(tapNum(i), tapNum(i+1))+1; %fill in transition matrix
-        if mod(i,skp) == 1
-            % plot a time varying transition matrix
-            %  figure(2)
-            %   imagesc(T)
-            pause(0.001)
-            
-            % plot a time varying histogram
-            
-            histogram(tapNum(1:i))
-            axis([0 26 0 axismax])
-            xlabel('tap kind')
-            ylabel('number of taps')
-        end
-        %pause(0.01)
+tapNum_late = transformMatrix(bins(2001:end,:)); %the tap "number"
+
+% have to assign each tap to a bin
+% T is N^2=
+
+T_late = zeros(N^2);
+R_late = zeros(N^2);
+rewards_late = rewards(end-1999:end);
+%T_plt=zeros(N^2,N^2, mod(size(tapNum_late),100));
+for i = 1:2:size(tapNum_late,2)-2 %only look at the tap 1--> tap 2 transitions
+    
+    T_late(tapNum_late(i), tapNum_late(i+1)) =  T_late(tapNum_late(i), tapNum_late(i+1))+1; %fill in transition matrix
+    R_late(tapNum_late(i), tapNum_late(i+1)) = R_late(tapNum_late(i), tapNum_late(i+1))+rewards_late(i);%rewards for that transition
+end
+
+counts =histcounts(tapNum_late);
+sumCts = sum(counts);
+%TT = T_late/sumCts; %proportion transition matrix
+
+%% shuffling all taps and rewards
+T2 = zeros(N^2);
+R2 = zeros(N^2);
+for p = 1:1000
+    scr = randperm(length(tapNum_late));
+    tapNum_late2= tapNum_late(scr);
+    rewards_scr = rewards(scr);
+    %disp(tapNum_early2(1:5))
+    for i = 1:2:size(tapNum_late2,2)-1
+        T2(tapNum_late2(i), tapNum_late2(i+1),p) =  T2(tapNum_late2(i), tapNum_late2(i+1))+1; %fill in transition matrix
+        R2(tapNum_late2(i), tapNum_late2(i+1),p) = R2(tapNum_late2(i), tapNum_late2(i+1))+rewards_scr(i);%rewards for that transition
+
     end
+    %T2(:,:,p) = T2(:,:,p)./sumCts;
 end
 
 
+TTT_late=T_late./prctile(T2,97.5,3); %most conservative estimate
+TTT_late(TTT_late<1) =0; % only the significant ratios (>1)
+
+subplot 322
+imagesc(log(TTT_late))
+set(gca,'YDir','normal')
+
+xlabel('tap(t+1)')
+ylabel('tap(t)')
+axis square
+c = colorbar;
+c.Label.String = 'Expected:Shuffled Transitions';
+title('Transition Matrix (Late)')
+prettyplot(12)
 
 
+% rewards
+RRR_late=R_late./prctile(R2,97.5,3); %most conservative estimate
+RRR_late(RRR_late<1) =0;
 
-%% separate by first and second tap in a trial
+subplot 324
+imagesc(log(RRR_late));set(gca,'YDir','normal');
+xlabel('tap(t+1)')
+ylabel('tap(t)')
+axis square
+colormap(gca,flipud(hot));
+c = colorbar;
+c.Label.String = 'Expected:Shuffled Transitions';
+title('Rewards Matrix (Late)')
+prettyplot(12)
+
 
 %% do taps converge over time?
-figure;
-subplot 121
-plot(tapNum,'.')
-xlabel('time')
-ylabel('tap kind')
-axis square
-subplot 122
-histogram(tapNum);
+subplot 325
+histogram(tapNum_early,max(tapNum_early))
 xlabel('tap kind')
 ylabel('number of taps')
 axis square
+prettyplot(12)
 
-
-%% looking at how rewards relates to tapNum overall
-
-for i = 1:max(tapNum)
-    tap_reward(i) = size(rewards(tapNum==i),1);
-    tap_cumsum(i,:) = cumsum(tapNum==i);
-end
-figure;
-subplot 121
-bar(tap_reward)
+subplot 326
+histogram(tapNum_late,max(tapNum_late));
 xlabel('tap kind')
-ylabel('cumulative rewards')
+ylabel('number of taps')
+axis square
+prettyplot(12)
+
+subplot 321
+caxis([0 1.7]);
+subplot 322
+caxis([0 1.7]);
+subplot 323
+caxis([0 2]);
+subplot 324
+caxis([0 2]);
+
+suptitle(rat(1:6))
+
+%% plot reward correlation with transitions
+
+figure;
+subplot 121;
+scatter(reshape(log(TTT_early),[1 N^4]),reshape(log(RRR_early),[1 N^4]))
+axis square; dline;
+xlabel('transition matrix values')
+ylabel('reward matrix values')
+
+subplot 122;
+scatter(reshape(log(TTT_late),[1 N^4]),reshape(log(RRR_late),[1 N^4]))
+axis square; dline;
+xlabel('transition matrix values')
+ylabel('reward matrix values')
+
+ 
+
+
+
+%% raw count transition matrices
+figure;
 prettyplot
+subplot 241;imagesc(T_early);set(gca,'YDir','normal');axis square
+subplot 242;imagesc(R_early); set(gca,'YDir','normal');colormap(gca,flipud(hot));axis square;
+subplot 243;scatter(reshape(T_early,[1 N^4]),reshape(R_early,[1 N^4]));axis square; dline;
+xlabel('transitions')
+ylabel('rewards')
 
-subplot 122
-plot(tap_cumsum','LineWidth',2)
-xlabel('taps (time)')
-ylabel('cumulative sum')
-legend('1','2','3','4','5','6','7','8','9')
-prettyplot
-
-
-%figure; scatter(tapNum,rewards);
-
-%% separate by first and second tap in a trial
+subplot 244;scatter(tapNum_early,rewards_early);axis square; dline;
+xlabel('tap kind')
+ylabel('rewards')
 
 
-%struct_unzip(analysis)
-%plot(rewards,'.')
+subplot 245;imagesc(T_late);set(gca,'YDir','normal');axis square
+subplot 246;imagesc(R_late);set(gca,'YDir','normal'); colormap(gca,flipud(hot));axis square;
+subplot 247;scatter(reshape(T_late,[1 N^4]),reshape(R_late,[1 N^4]));axis square; dline;
+xlabel('transitions')
+ylabel('rewards')
+
+subplot 248;scatter(tapNum_late,rewards_late);axis square; dline;
+xlabel('tap kind')
+ylabel('rewards')
+
+
+
 end
 
 function [dims, plt,idx,rewards]=vis(analysis,g)
