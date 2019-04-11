@@ -118,11 +118,9 @@ T(24,13,2)=1;
 T(25,1,2)=1;
 
 
-
 %% "intact" animal
 
 results_intact= twotap_agent(O,T,0,plt,lrn,div);
-
 
 %% "lesioned" animal
 

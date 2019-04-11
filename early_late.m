@@ -1,5 +1,5 @@
 function early_late
-close all
+%close all
 % purpose: this function examines the transition matrix early and late in
 % learning
 
@@ -11,7 +11,7 @@ addpath('/Volumes/GoogleDrive/Team Drives/MC Learning Project/Matlab/output/')
 addpath('/Volumes/GoogleDrive/Team Drives/MC Learning Project/Matlab/gerald new code/')
 
 %% a list of all files:
-% these are reconstructed from the dimreduced files
+% these are reconstructed from the dim reduced files
 % lesioned
 %GP1829_001_061_taps_pv_aah
 %GP1830_001_084_taps_pv_aah
@@ -23,7 +23,8 @@ addpath('/Volumes/GoogleDrive/Team Drives/MC Learning Project/Matlab/gerald new 
 %GP1840_001_059_taps_pv_aah
 
 %% position AND velocity (taps)
-tap_exploration('multi_trials_p_aah.mat')% this guy systematically undershot IPI, no stereotyped ITI but did learn some low CV for IPI
+%tap_exploration('multi_trials_p_aah.mat')% this guy systematically undershot IPI, no stereotyped ITI but did learn some low CV for IPI
+tap_exploration('GP1838_001_099_taps_pv_aah.mat')% learned around 5k trials
 
 % 16889 trials
 tap_exploration('GP1829_001_061_taps_pv_aah.mat') %naive partial lesion but seemed to learn IPI kind of (after 5000 trials), and ITI kind of!!
@@ -167,8 +168,11 @@ prettyplot
 N = 5; %dividing the space of PCs equally depending on the range of max PCs
 dims_all = [dims_early;dims_late];
 %[bins,bounds] = discretize(dims_all(:,1:2),N);
-[~,~,~,xbin,ybin] = histcounts2(dims_all(:,1),dims_all(:,2),[N N]);
+[~,xb,yb,xbin,ybin] = histcounts2(dims_all(:,1),dims_all(:,2),[N N]);
 bins = [xbin ybin];
+
+line([xb' xb'], [min(yb) max(yb)],'Color','k')
+line([min(xb) max(xb)],[yb' yb'],'Color','k')
 %[bins,bounds] = discretize(dims_early(:,1:2),N);
 
 %% make the bins into a matrix (NxN)
@@ -344,16 +348,24 @@ suptitle(rat(1:6))
 figure;
 subplot 121;
 scatter(reshape(log(TTT_early),[1 N^4]),reshape(log(RRR_early),[1 N^4]))
-axis square; dline;
+[r,p]=corrcoef(reshape(TTT_early,[1 N^4]),reshape(RRR_early,[1 N^4]),'row','complete')
+text(1.3,.5,strcat('r^2:',num2str(r(1,2)^2)))
+text(1.3,.4,strcat('p:',num2str(p(1,2))))
+axis square; 
 xlabel('transition matrix values')
 ylabel('reward matrix values')
+title('early (first 2000 trials)')
 
 subplot 122;
 scatter(reshape(log(TTT_late),[1 N^4]),reshape(log(RRR_late),[1 N^4]))
-axis square; dline;
+[r,p]=corrcoef(reshape(TTT_late,[1 N^4]),reshape(RRR_late,[1 N^4]),'row','complete')
+text(1.3,.5,strcat('r^2:',num2str(r(1,2)^2)))
+text(1.3,.4,strcat('p:',num2str(p(1,2))))
+axis square;
 xlabel('transition matrix values')
 ylabel('reward matrix values')
-
+title('late (last 2000 trials)')
+equalabscissa(1,2)
  
 
 
@@ -362,26 +374,34 @@ ylabel('reward matrix values')
 figure;
 prettyplot
 subplot 241;imagesc(T_early);set(gca,'YDir','normal');axis square
+xlabel('tap(t+1)')
+ylabel('tap(t)')
+title('Transition Matrix')
+
 subplot 242;imagesc(R_early); set(gca,'YDir','normal');colormap(gca,flipud(hot));axis square;
-subplot 243;scatter(reshape(T_early,[1 N^4]),reshape(R_early,[1 N^4]));axis square; dline;
+xlabel('tap(t+1)')
+ylabel('tap(t)')
+title('Reward Matrix')
+
+subplot 243;scatter(reshape(T_early,[1 N^4]),reshape(R_early,[1 N^4]));axis square;
 xlabel('transitions')
 ylabel('rewards')
 
-subplot 244;scatter(tapNum_early,rewards_early);axis square; dline;
+subplot 244;scatter(tapNum_early,rewards_early);axis square; 
 xlabel('tap kind')
 ylabel('rewards')
 
 
 subplot 245;imagesc(T_late);set(gca,'YDir','normal');axis square
 subplot 246;imagesc(R_late);set(gca,'YDir','normal'); colormap(gca,flipud(hot));axis square;
-subplot 247;scatter(reshape(T_late,[1 N^4]),reshape(R_late,[1 N^4]));axis square; dline;
+subplot 247;scatter(reshape(T_late,[1 N^4]),reshape(R_late,[1 N^4]));axis square; 
 xlabel('transitions')
 ylabel('rewards')
 
-subplot 248;scatter(tapNum_late,rewards_late);axis square; dline;
+subplot 248;scatter(tapNum_late,rewards_late);axis square;
 xlabel('tap kind')
 ylabel('rewards')
-
+suptitle('Raw Count Matrices')
 
 
 end

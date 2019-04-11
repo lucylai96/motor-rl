@@ -24,6 +24,8 @@ addpath('/Volumes/GoogleDrive/Team Drives/MC Learning Project/Matlab/gerald new 
 %GP1838_001_099_taps_pv_aah
 %GP1840_001_059_taps_pv_aah
 
+%% all rats
+%tap_exploration('cmulti_taps_p_aah.mat')% this guy systematically undershot IPI, no stereotyped ITI but did learn some low CV for IPI
 
 %% position AND velocity (taps)
 
@@ -151,12 +153,15 @@ subplot 338; hold on
 %taptype = taptype(idx);
 %tapnum = tapnum(idx);
 %rewards = rewards(idx);
+
 dims = dims(taptype>0,:);% take out 1-tap trials
 rewards = rewards(taptype>0);
 N = 5; %dividing the space of PCs equally depending on the range of max PCs
 %[bins,bounds] = discretize(dims(:,1:2),N);
 [n,xb,yb,xbin,ybin] = histcounts2(dims(:,1),dims(:,2),[N N]);
 bins = [xbin ybin];
+line([xb' xb'], [min(yb) max(yb)],'Color','k')
+line([min(xb) max(xb)],[yb' yb'],'Color','k')
 
 % need to define the space in which
 plots = 0
@@ -193,7 +198,7 @@ end
 
 counts =histcounts(tapNum);
 sumCts = sum(counts);
-TT = T/sumCts; %proportion transition matrix
+%TT = T/sumCts; %proportion transition matrix
 
 %% counts the kollomergen way
 % for i = 1:length(counts)
@@ -211,21 +216,23 @@ for p = 1:500
         T2(tapNum2(i), tapNum2(i+1),p) =  T2(tapNum2(i), tapNum2(i+1))+1; %fill in transition matrix
         
     end
-    T2(:,:,p) = T2(:,:,p)./sumCts;
+   % T2(:,:,p) = T2(:,:,p)./sumCts;
 end
 
+TTT=T./prctile(T2,97.5,3); %most conservative estimate
+TTT(TTT<1) =0; % only the significant ratios (>1)
 
-
-TTT=TT./max(T2,[],3); %most conservative estimate
+%log(TTT)
+%TTT=TT./max(T2,[],3); %most conservative estimate
 %figure;
-imagesc(TTT)
+imagesc(log(TTT))
 %imagesc(T)
 
 xlabel('tap(t+1)')
 ylabel('tap(t)')
 axis square
 c = colorbar;
-c.Label.String = 'Number of Transitions';
+c.Label.String =  'Expected:Shuffled Transitions';
 title('Transition Matrix')
 suptitle(rat(1:6))
 
@@ -234,10 +241,10 @@ set(gcf,'Position',[100 100 700 600]);
 
 
 %% raw counts
-figure;subplot 131; imagesc(T);axis square
-subplot 132;imagesc(R); colormap(gca,flipud(hot));axis square;
-subplot 133;scatter(reshape(T,[1 N^4]),reshape(R,[1 N^4]));axis square; dline;
-
+% figure;subplot 131; imagesc(T);axis square
+% subplot 132;imagesc(R); colormap(gca,flipud(hot));axis square;
+% subplot 133;scatter(reshape(T,[1 N^4]),reshape(R,[1 N^4]));axis square; dline;
+% 
 
 % plot the kind of tap (tap #?) by time
 if plots == 1
@@ -277,12 +284,13 @@ plot(tapNum,'.')
 xlabel('time')
 ylabel('tap kind')
 axis square
+prettyplot
 subplot 122
 histogram(tapNum);
 xlabel('tap kind')
 ylabel('number of taps')
 axis square
-
+prettyplot
 
 %% looking at how rewards relates to tapNum overall
 
