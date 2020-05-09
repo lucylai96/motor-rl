@@ -7,9 +7,9 @@ function tapDistances
 % lesioned vs nonlesioned animals
 
 %% adding dependencies
-addpath('/Volumes/GoogleDrive/Team Drives/MC Learning Project/Matlab')
-addpath('/Volumes/GoogleDrive/Team Drives/MC Learning Project/Matlab/output/')
-addpath('/Volumes/GoogleDrive/Team Drives/MC Learning Project/Matlab/gerald new code/')
+addpath('/Volumes/Google Drive/Team Drives/MC Learning Project/Matlab')
+addpath('/Volumes/Google Drive/Team Drives/MC Learning Project/Matlab/output/')
+addpath('/Volumes/Google Drive/Team Drives/MC Learning Project/Matlab/gerald new code/')
 
 %% a list of all files:
 % these are reconstructed from the dimreduced files
@@ -27,17 +27,17 @@ addpath('/Volumes/GoogleDrive/Team Drives/MC Learning Project/Matlab/gerald new 
 %% position AND velocity (taps)
 
 % 16889 trials
-tap_exploration('GP1829_001_061_taps_pv_aah.mat') %naive partial lesion but seemed to learn IPI kind of (after 5000 trials), and ITI kind of!!
+%tap_exploration('GP1829_001_061_taps_pv_aah.mat') %naive partial lesion but seemed to learn IPI kind of (after 5000 trials), and ITI kind of!!
 %tap_exploration('GP1840_001_059_taps_pv_aah.mat')% learned around 5k trials
 
 % 16869 trials
-tap_exploration('GP1830_001_084_taps_pv_aah.mat')% this guy was switched to auditory feedback but before then did not learn ANY structure
+%tap_exploration('GP1830_001_084_taps_pv_aah.mat')% this guy was switched to auditory feedback but before then did not learn ANY structure
 
 % 20321 trials
-tap_exploration('GP1831_001_045_taps_pv_aah.mat')% this guy systematically undershot IPI, no stereotyped ITI but did learn some low CV for IPI
+%tap_exploration('GP1831_001_045_taps_pv_aah.mat')% this guy systematically undershot IPI, no stereotyped ITI but did learn some low CV for IPI
 
 % 17084 trials
-tap_exploration('GP1832_001_070_taps_pv_aah.mat') %learned around 13k trials
+%tap_exploration('GP1832_001_070_taps_pv_aah.mat') %learned around 13k trials
 
 % 16751 trials
 tap_exploration('GP1838_001_099_taps_pv_aah.mat')% learned around 5k trials
